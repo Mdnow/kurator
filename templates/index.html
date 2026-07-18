@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>КУРАТОР</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg-1: #0a0a1a;
+  --glass: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-hover: rgba(255, 255, 255, 0.07);
+  --text-1: #e8e8f0;
+  --text-2: #8888aa;
+  --text-3: #555570;
+  --accent: #7c6bf0;
+  --accent-dim: rgba(124, 107, 240, 0.15);
+  --danger: #e05555;
+  --blur: 20px;
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+html { font-size: 15px; }
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg-1);
+  color: var(--text-1);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: -40%; left: -20%;
+  width: 80vw; height: 80vw;
+  background: radial-gradient(circle, rgba(100, 70, 220, 0.12) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+body::after {
+  content: '';
+  position: fixed;
+  bottom: -30%; right: -10%;
+  width: 60vw; height: 60vw;
+  background: radial-gradient(circle, rgba(50, 120, 220, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.layout {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: 100vh;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* --- SIDEBAR --- */
+.sidebar {
+  width: 260px;
+  min-width: 260px;
+  padding: 32px 20px;
+  border-right: 1px solid var(--glass-border);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.logo {
+  text-align: center;
+  padding-bottom: 8px;
+}
+
+.logo h1 {
+  font-size: 1.1rem;
+  font-weight: 300;
+  letter-spacing: 0.5em;
+  color: var(--text-2);
+}
+
+.btn-today {
+  width: 100%;
+  background: var(--accent-dim);
+  border: 1px solid rgba(124, 107, 240, 0.2);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-today:hover {
+  background: rgba(124, 107, 240, 0.25);
+}
+
+.btn-today.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.calendar {
+  background: var(--glass);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 16px;
+}
+
+.cal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.cal-header span {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-2);
+}
+
+.cal-nav {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: color 0.2s;
+}
+
+.cal-nav:hover { color: var(--text-1); }
+
+.cal-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  margin-bottom: 6px;
+}
+
+.cal-weekdays span {
+  text-align: center;
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--text-3);
+  letter-spacing: 0.05em;
+  padding: 4px 0;
+}
+
+.cal-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.cal-day {
+  text-align: center;
+  font-size: 0.75rem;
+  padding: 6px 2px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--text-2);
+  position: relative;
+}
+
+.cal-day:hover { background: rgba(255,255,255,0.06); }
+
+.cal-day.other { color: var(--text-3); opacity: 0.4; }
+.cal-day.today { color: var(--accent); font-weight: 600; }
+.cal-day.selected { background: var(--accent); color: #fff; font-weight: 500; }
+
+.cal-day.has-notes::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+.cal-day.selected.has-notes::after { background: #fff; }
+
+.cal-counts {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.cal-stat {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.65rem;
+  color: var(--text-3);
+  padding: 3px 0;
+}
+
+.cal-stat span:last-child {
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- MAIN --- */
+.main {
+  flex: 1;
+  padding: 32px 36px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.day-title {
+  font-size: 1.3rem;
+  font-weight: 300;
+  color: var(--text-1);
+  margin-bottom: 4px;
+}
+
+.day-subtitle {
+  font-size: 0.7rem;
+  color: var(--text-3);
+  letter-spacing: 0.1em;
+  margin-bottom: 28px;
+}
+
+.input-wrapper {
+  background: var(--glass);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 4px;
+  margin-bottom: 24px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.input-wrapper:focus-within {
+  border-color: rgba(124, 107, 240, 0.3);
+  box-shadow: 0 0 40px rgba(124, 107, 240, 0.08);
+}
+
+.input-wrapper textarea {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 300;
+  line-height: 1.7;
+  padding: 16px 20px;
+  resize: none;
+  min-height: 48px;
+  max-height: 200px;
+}
+
+.input-wrapper textarea::placeholder { color: var(--text-3); }
+
+.suggest {
+  display: none;
+  font-size: 0.72rem;
+  color: var(--text-3);
+  padding: 8px 4px 0;
+  letter-spacing: 0.03em;
+  font-style: italic;
+  animation: fadeUp 0.3s ease;
+}
+
+.input-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 16px 10px;
+}
+
+.char-count {
+  font-size: 0.7rem;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.btn-save {
+  background: var(--accent-dim);
+  border: 1px solid rgba(124, 107, 240, 0.2);
+  color: var(--accent);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  padding: 8px 24px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-save:hover {
+  background: rgba(124, 107, 240, 0.25);
+}
+
+.btn-save:active { transform: scale(0.97); }
+
+.search-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.search-row input {
+  flex: 1;
+  background: var(--glass);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 11px 16px;
+  color: var(--text-1);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 300;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+.search-row input:focus { border-color: rgba(124, 107, 240, 0.3); }
+.search-row input::placeholder { color: var(--text-3); }
+
+.stats {
+  font-size: 0.7rem;
+  color: var(--text-3);
+  letter-spacing: 0.08em;
+  margin-bottom: 24px;
+}
+
+.groups { display: flex; flex-direction: column; gap: 28px; }
+
+.group { animation: fadeUp 0.4s ease both; }
+.group:nth-child(2) { animation-delay: 0.05s; }
+.group:nth-child(3) { animation-delay: 0.1s; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding-left: 2px;
+}
+
+.group-title {
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+
+.group-count {
+  font-size: 0.6rem;
+  color: var(--text-3);
+  background: rgba(255,255,255,0.04);
+  padding: 2px 8px;
+  border-radius: 20px;
+}
+
+.group-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--glass-border), transparent);
+}
+
+.notes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.note-card {
+  background: var(--glass);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 18px;
+  transition: all 0.25s;
+  animation: fadeUp 0.35s ease both;
+}
+
+.note-card:hover {
+  background: var(--glass-hover);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.note-content {
+  font-size: 0.9rem;
+  font-weight: 300;
+  line-height: 1.7;
+  color: var(--text-1);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin-bottom: 12px;
+}
+
+.note-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.note-date {
+  font-size: 0.6rem;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.note-delete {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  opacity: 0;
+  transition: all 0.2s;
+}
+
+.note-card:hover .note-delete { opacity: 1; }
+.note-delete:hover { color: var(--danger); background: rgba(224, 85, 85, 0.1); }
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-3);
+}
+
+.empty-state .icon { font-size: 2rem; margin-bottom: 14px; opacity: 0.3; }
+.empty-state p { font-size: 0.85rem; font-weight: 300; }
+
+.toast {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: rgba(20, 20, 40, 0.9);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  color: var(--text-1);
+  font-size: 0.8rem;
+  padding: 12px 28px;
+  border-radius: 40px;
+  opacity: 0;
+  transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+  z-index: 100;
+}
+
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+@media (max-width: 800px) {
+  .layout { flex-direction: column; }
+  .sidebar { width: 100%; min-width: 0; border-right: none; border-bottom: 1px solid var(--glass-border); padding: 20px 16px; }
+  .main { padding: 20px 16px; }
+  .notes-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="logo"><h1>КУРАТОР</h1></div>
+
+    <button class="btn-today" id="btnToday" onclick="goToday()">СЕГОДНЯ</button>
+
+    <div class="calendar">
+      <div class="cal-header">
+        <button class="cal-nav" onclick="calNav(-1)">&#8249;</button>
+        <span id="calMonth"></span>
+        <button class="cal-nav" onclick="calNav(1)">&#8250;</button>
+      </div>
+      <div class="cal-weekdays">
+        <span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span>
+      </div>
+      <div class="cal-days" id="calDays"></div>
+      <div class="cal-counts" id="calCounts"></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="day-title" id="dayTitle"></div>
+    <div class="day-subtitle" id="daySubtitle"></div>
+
+    <div class="input-wrapper">
+      <textarea id="noteInput" placeholder="Запиши мысль..." rows="1"></textarea>
+      <div class="input-footer">
+        <span class="char-count" id="charCount">0</span>
+        <button class="btn-save" id="saveBtn">СОХРАНИТЬ</button>
+      </div>
+    </div>
+    <div class="suggest" id="suggest"></div>
+
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="Поиск...">
+    </div>
+
+    <div class="stats" id="stats"></div>
+    <div class="groups" id="groups"></div>
+    <div class="empty-state" id="emptyState">
+      <div class="icon">&#9671;</div>
+      <p>Напиши первую заметку за сегодня</p>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const RU_MONTHS = ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+const RU_DAYS = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
+const RU_MONTHS_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+
+let selectedDate = todayStr();
+let calYear, calMonth;
+let dateCounts = {};
+
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function initCalendar() {
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+  renderCalendar();
+}
+
+function renderCalendar() {
+  $('#calMonth').textContent = RU_MONTHS[calMonth] + ' ' + calYear;
+
+  const first = new Date(calYear, calMonth, 1);
+  const last = new Date(calYear, calMonth + 1, 0);
+  let startDay = first.getDay() - 1;
+  if (startDay < 0) startDay = 6;
+
+  let html = '';
+  for (let i = 0; i < startDay; i++) {
+    const d = new Date(calYear, calMonth, -startDay + i + 1);
+    html += `<div class="cal-day other">${d.getDate()}</div>`;
+  }
+
+  for (let d = 1; d <= last.getDate(); d++) {
+    const ds = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    const today = ds === todayStr();
+    const sel = ds === selectedDate;
+    const has = dateCounts[ds] > 0;
+    const cls = ['cal-day'];
+    if (today) cls.push('today');
+    if (sel) cls.push('selected');
+    if (has) cls.push('has-notes');
+    html += `<div class="${cls.join(' ')}" onclick="selectDate('${ds}')">${d}</div>`;
+  }
+
+  const remaining = 7 - ((startDay + last.getDate()) % 7);
+  if (remaining < 7) {
+    for (let i = 1; i <= remaining; i++) {
+      html += `<div class="cal-day other">${i}</div>`;
+    }
+  }
+
+  $('#calDays').innerHTML = html;
+  renderCalCounts();
+}
+
+function renderCalCounts() {
+  const counts = Object.entries(dateCounts).sort((a,b) => b[0].localeCompare(a[0])).slice(0, 5);
+  if (counts.length === 0) {
+    $('#calCounts').innerHTML = '';
+    return;
+  }
+  let html = '';
+  for (const [date, cnt] of counts) {
+    const d = new Date(date + 'T12:00:00');
+    const label = d.getDate() + ' ' + RU_MONTHS_GEN[d.getMonth()];
+    html += `<div class="cal-stat"><span>${label}</span><span>${cnt}</span></div>`;
+  }
+  $('#calCounts').innerHTML = html;
+}
+
+function calNav(dir) {
+  calMonth += dir;
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  renderCalendar();
+}
+
+function selectDate(ds) {
+  selectedDate = ds;
+  renderCalendar();
+  renderDayTitle();
+  loadNotes();
+}
+
+function goToday() {
+  selectedDate = todayStr();
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+  renderCalendar();
+  renderDayTitle();
+  loadNotes();
+}
+
+function renderDayTitle() {
+  const d = new Date(selectedDate + 'T12:00:00');
+  const dayNum = d.getDate();
+  const month = RU_MONTHS_GEN[d.getMonth()];
+  const weekday = RU_DAYS[d.getDay()];
+  const today = selectedDate === todayStr();
+  $('#dayTitle').textContent = today ? 'Сегодня' : dayNum + ' ' + month;
+  $('#daySubtitle').textContent = weekday + (today ? '' : ', ' + d.getFullYear());
+  $('#btnToday').classList.toggle('active', today);
+}
+
+const input = $('#noteInput');
+const saveBtn = $('#saveBtn');
+const charCount = $('#charCount');
+const searchInput = $('#searchInput');
+const groupsEl = $('#groups');
+const statsEl = $('#stats');
+const emptyEl = $('#emptyState');
+const toastEl = $('#toast');
+
+let allNotes = [];
+let allGroups = {};
+let suggestTimer = null;
+
+function autoResize() {
+  input.style.height = 'auto';
+  input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+}
+
+input.addEventListener('input', () => {
+  autoResize();
+  charCount.textContent = input.value.length;
+  clearTimeout(suggestTimer);
+  const val = input.value.trim();
+  if (val.length >= 6) {
+    suggestTimer = setTimeout(() => checkSimilar(val), 400);
+  } else {
+    hideSuggest();
+  }
+});
+
+input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveNote(); } });
+saveBtn.addEventListener('click', saveNote);
+searchInput.addEventListener('input', renderGroups);
+
+async function saveNote() {
+  const content = input.value.trim();
+  if (!content) return;
+  saveBtn.textContent = '...';
+  saveBtn.disabled = true;
+  try {
+    const res = await fetch('/api/notes', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, date: selectedDate })
+    });
+    if (res.ok) {
+      input.value = '';
+      autoResize();
+      charCount.textContent = '0';
+      toast('Сохранено');
+      await loadNotes();
+    }
+  } catch (e) { toast('Ошибка сети'); }
+  saveBtn.textContent = 'СОХРАНИТЬ';
+  saveBtn.disabled = false;
+}
+
+async function deleteNote(id) {
+  try {
+    await fetch('/api/notes/' + id, { method: 'DELETE' });
+    toast('Удалено');
+    await loadNotes();
+  } catch (e) { toast('Ошибка'); }
+}
+
+async function loadNotes() {
+  try {
+    const res = await fetch('/api/notes?date=' + selectedDate);
+    const data = await res.json();
+    allNotes = data.notes;
+    allGroups = data.groups;
+    dateCounts = data.date_counts || {};
+    renderCalendar();
+    renderGroups();
+  } catch (e) { console.error(e); }
+}
+
+function renderGroups() {
+  const query = searchInput.value.trim().toLowerCase();
+  let groups = allGroups;
+  let notes = allNotes;
+
+  if (query) {
+    notes = allNotes.filter(n => n.content.toLowerCase().includes(query));
+    if (notes.length === 0) {
+      groupsEl.innerHTML = '';
+      statsEl.textContent = '';
+      emptyEl.innerHTML = '<div class="icon">&#9671;</div><p>Ничего не найдено</p>';
+      emptyEl.style.display = 'block';
+      return;
+    }
+    const ids = new Set(notes.map(n => n.id));
+    groups = {};
+    for (const [title, items] of Object.entries(allGroups)) {
+      const filtered = items.filter(n => ids.has(n.id));
+      if (filtered.length > 0) groups[title] = filtered;
+    }
+    if (!Object.keys(groups).length) groups = { 'Результаты': notes };
+  }
+
+  if (notes.length === 0) {
+    groupsEl.innerHTML = '';
+    statsEl.textContent = '';
+    const today = selectedDate === todayStr();
+    emptyEl.innerHTML = '<div class="icon">&#9671;</div><p>' + (today ? 'Напиши первую заметку за сегодня' : 'Нет заметок за этот день') + '</p>';
+    emptyEl.style.display = 'block';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  const gc = Object.keys(groups).length;
+  statsEl.textContent = notes.length + ' замет' + (notes.length === 1 ? 'ка' : notes.length < 5 ? 'ки' : 'ок') + '  ·  ' + gc + ' групп' + (gc === 1 ? 'а' : '');
+
+  let html = '';
+  for (const [title, items] of Object.entries(groups)) {
+    html += '<div class="group"><div class="group-header"><span class="group-title">' + esc(title) + '</span><span class="group-count">' + items.length + '</span><div class="group-line"></div></div><div class="notes-grid">';
+    for (const note of items) {
+      const t = new Date(note.created_at);
+      const time = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+      html += '<div class="note-card"><div class="note-content">' + esc(note.content) + '</div><div class="note-meta"><span class="note-date">' + time + '</span><button class="note-delete" onclick="deleteNote(' + note.id + ')">&#10005;</button></div></div>';
+    }
+    html += '</div></div>';
+  }
+  groupsEl.innerHTML = html;
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(() => toastEl.classList.remove('show'), 2000);
+}
+
+initCalendar();
+renderDayTitle();
+loadNotes();
+loadYesterdaySummary();
+
+async function checkSimilar(text) {
+  try {
+    const res = await fetch('/api/similar?q=' + encodeURIComponent(text));
+    const matches = await res.json();
+    if (matches.length > 0) {
+      const el = document.getElementById('suggest');
+      const snippet = matches[0].content.length > 80 ? matches[0].content.slice(0, 80) + '...' : matches[0].content;
+      el.innerHTML = 'похоже на: ' + esc(snippet);
+      el.style.display = 'block';
+    } else {
+      hideSuggest();
+    }
+  } catch (e) {}
+}
+
+function hideSuggest() {
+  const el = document.getElementById('suggest');
+  if (el) el.style.display = 'none';
+}
+
+function showSuggest(html) {
+  const el = document.getElementById('suggest');
+  if (el) { el.innerHTML = html; el.style.display = 'block'; }
+}
+
+async function loadYesterdaySummary() {
+  try {
+    const res = await fetch('/api/yesterday');
+    const data = await res.json();
+    if (data.has) {
+      showSuggest('вчера: ' + data.count + ' замет' + (data.count === 1 ? 'ка' : data.count < 5 ? 'ки' : 'ок') + ', ' + data.groups + ' групп' + (data.groups === 1 ? 'а' : ''));
+      setTimeout(hideSuggest, 5000);
+    }
+  } catch (e) {}
+}
+</script>
+</body>
+</html>
