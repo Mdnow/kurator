@@ -1,9 +1,14 @@
 @echo off
-title NOTES
+title КУРАТОР — Облачная версия
 echo.
-echo   Установка зависимостей...
+echo   Куратор запущен!
 echo.
-pip install -q flask scikit-learn 2>nul
-echo   Запуск...
+echo   Открой на телефоне:
+echo   http://192.168.0.22:5556
 echo.
-python "%~dp0app.py"
+echo   (оба устройства должны быть в одной WiFi-сети)
+echo.
+echo   Нажми Ctrl+C чтобы остановить
+echo.
+cd /d "%~dp0"
+python -m http.server 5556 --bind 0.0.0.0
