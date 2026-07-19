@@ -1,3 +1,4 @@
 ﻿__pycache__/
-notes.db
 *.pyc
+notes.db
+backups/
