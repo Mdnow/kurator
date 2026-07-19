@@ -6,7 +6,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0a1a">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>КУРАТОР</title>
+<meta name="version" content="calendar-v2">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -159,6 +163,9 @@ body::after{content:'';position:fixed;bottom:-30%;right:-10%;width:60vw;height:6
 const SUPABASE_URL = 'https://pqngmvixfcsrvsvrtbfj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxbmdtdml4ZmNzcnZzdnJ0YmZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNzY0NDcsImV4cCI6MjA5OTk1MjQ0N30.nbO6rSANWaWRRxnRvrwlrawkBT2DP0VZ1GuyR6C2nHE';
 const API = SUPABASE_URL + '/rest/v1/notes';
+const APP_VERSION = 'calendar-v2';
+const stored = localStorage.getItem('app_version');
+if (stored !== APP_VERSION) { localStorage.setItem('app_version', APP_VERSION); if (stored) { location.reload(true); } }
 
 const $ = s => document.querySelector(s);
 const RU_MONTHS = ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
