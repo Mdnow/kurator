@@ -211,7 +211,7 @@ function initLock() {
   const input = $('#lockInput');
   const btn = $('#lockBtn');
   overlay.style.display = 'flex';
-  input.focus();
+  setTimeout(() => { try { input.focus(); } catch(e) {} }, 300);
   function submit() {
     const v = input.value.trim();
     if (!v) return;
@@ -221,12 +221,16 @@ function initLock() {
   }
   btn.addEventListener('click', submit);
   input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  input.addEventListener('touchend', e => { e.preventDefault(); submit(); });
 }
 
 function startApp() {
-  $('#app').style.display = 'flex';
-  $('#keyInfo').textContent = USER_ID;
-  loadNotes();
+  try {
+    $('#app').style.display = 'flex';
+    $('#keyInfo').textContent = USER_ID;
+    showSkeleton();
+    loadNotes();
+  } catch(e) { console.error('startApp error:', e); }
 }
 
 async function api(method, path, body) {
