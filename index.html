@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0a1a">
-<title>╨Ъ╨г╨а╨Р╨в╨Ю╨а</title>
+<title>??????????????</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -112,45 +112,45 @@ body::after{content:'';position:fixed;bottom:-30%;right:-10%;width:60vw;height:6
 <body>
 <div class="lock-overlay" id="lockOverlay">
   <div class="lock-box">
-    <h2>╨Ъ╨г╨а╨Р╨в╨Ю╨а</h2>
-    <p>╨Т╨▓╨╡╨┤╨╕ ╨║╨╗╤О╤З ╨┤╨╛╤Б╤В╤Г╨┐╨░ тАФ ╨╛╨┤╨╜╨╛ ╤Б╨╗╨╛╨▓╨╛, ╨║╨╛╤В╨╛╤А╨╛╨╡ ╨▒╤Г╨┤╨╡╤В ╤А╨░╨▒╨╛╤В╨░╤В╤М ╨╜╨░ ╨▓╤Б╨╡╤Е ╤В╨▓╨╛╨╕╤Е ╤Г╤Б╤В╤А╨╛╨╣╤Б╤В╨▓╨░╤Е</p>
-    <input type="password" id="lockInput" placeholder="╨║╨╗╤О╤З" autocomplete="off">
-    <button id="lockBtn">╨Т╨Ю╨Щ╨в╨Ш</button>
-    <div class="lock-err" id="lockErr">╨▓╨▓╨╡╨┤╨╕ ╨║╨╗╤О╤З</div>
+    <h2>??????????????</h2>
+    <p>?????????? ???????? ?????????????? ??? ???????? ??????????, ?????????????? ?????????? ???????????????? ???? ???????? ?????????? ??????????????????????</p>
+    <input type="password" id="lockInput" placeholder="????????" autocomplete="off">
+    <button id="lockBtn">??????????</button>
+    <div class="lock-err" id="lockErr">?????????? ????????</div>
   </div>
 </div>
 <div class="layout" id="appLayout" style="display:none">
   <aside class="sidebar">
-    <div class="logo"><h1>╨Ъ╨г╨а╨Р╨в╨Ю╨а <span class="sync-dot" id="syncDot" title="╤Б╨╕╨╜╤Е╤А╨╛╨╜╨╕╨╖╨╕╤А╨╛╨▓╨░╨╜╨╛"></span></h1></div>
-    <button class="btn-today" id="btnToday" onclick="goToday()">╨б╨Х╨У╨Ю╨Ф╨Э╨п</button>
+    <div class="logo"><h1>?????????????? <span class="sync-dot" id="syncDot" title="????????????????????????????????"></span></h1></div>
+    <button class="btn-today" id="btnToday" onclick="goToday()">??????????????</button>
     <div class="calendar">
       <div class="cal-header">
         <button class="cal-nav" onclick="calNav(-1)">&#8249;</button>
         <span id="calMonth"></span>
         <button class="cal-nav" onclick="calNav(1)">&#8250;</button>
       </div>
-      <div class="cal-weekdays"><span>╨Я╨╜</span><span>╨Т╤В</span><span>╨б╤А</span><span>╨з╤В</span><span>╨Я╤В</span><span>╨б╨▒</span><span>╨Т╤Б</span></div>
+      <div class="cal-weekdays"><span>????</span><span>????</span><span>????</span><span>????</span><span>????</span><span>????</span><span>????</span></div>
       <div class="cal-days" id="calDays"></div>
       <div class="cal-counts" id="calCounts"></div>
     </div>
-    <div class="key-info" id="keyInfo" onclick="lockApp()" title="╨▓╤Л╨╣╤В╨╕"></div>
+    <div class="key-info" id="keyInfo" onclick="lockApp()" title="??????????"></div>
   </aside>
   <main class="main">
     <div class="day-title" id="dayTitle"></div>
     <div class="day-subtitle" id="daySubtitle"></div>
     <div class="input-wrapper">
-      <textarea id="noteInput" placeholder="╨Ч╨░╨┐╨╕╤И╨╕ ╨╝╤Л╤Б╨╗╤М..." rows="1"></textarea>
+      <textarea id="noteInput" placeholder="???????????? ??????????..." rows="1"></textarea>
       <div class="input-footer">
         <span class="char-count" id="charCount">0</span>
-        <button class="btn-save" id="saveBtn">╨б╨Ю╨е╨а╨Р╨Э╨Ш╨в╨м</button>
+        <button class="btn-save" id="saveBtn">??????????????????</button>
       </div>
     </div>
-    <div class="input-hint">Enter тАФ ╤Б╨╛╤Е╤А╨░╨╜╨╕╤В╤М ┬╖ Shift+Enter тАФ ╨╜╨╛╨▓╨░╤П ╤Б╤В╤А╨╛╨║╨░</div>
+    <div class="input-hint">Enter ??? ?????????????????? ?? Shift+Enter ??? ?????????? ????????????</div>
     <div class="suggest" id="suggest"></div>
-    <div class="search-row"><input type="text" id="searchInput" placeholder="╨Я╨╛╨╕╤Б╨║..."></div>
+    <div class="search-row"><input type="text" id="searchInput" placeholder="??????????..."></div>
     <div class="stats" id="stats"></div>
     <div class="groups" id="groups"></div>
-    <div class="empty-state" id="emptyState"><div class="icon">&#9671;</div><p>╨Э╨░╨┐╨╕╤И╨╕ ╨┐╨╡╤А╨▓╤Г╤О ╨╖╨░╨╝╨╡╤В╨║╤Г</p></div>
+    <div class="empty-state" id="emptyState"><div class="icon">&#9671;</div><p>???????????? ???????????? ??????????????</p></div>
   </main>
 </div>
 <div class="toast" id="toast"></div>
@@ -161,9 +161,9 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const API = SUPABASE_URL + '/rest/v1/notes';
 
 const $ = s => document.querySelector(s);
-const RU_MONTHS = ['╤П╨╜╨▓╨░╤А╤М','╤Д╨╡╨▓╤А╨░╨╗╤М','╨╝╨░╤А╤В','╨░╨┐╤А╨╡╨╗╤М','╨╝╨░╨╣','╨╕╤О╨╜╤М','╨╕╤О╨╗╤М','╨░╨▓╨│╤Г╤Б╤В','╤Б╨╡╨╜╤В╤П╨▒╤А╤М','╨╛╨║╤В╤П╨▒╤А╤М','╨╜╨╛╤П╨▒╤А╤М','╨┤╨╡╨║╨░╨▒╤А╤М'];
-const RU_DAYS = ['╨▓╨╛╤Б╨║╤А╨╡╤Б╨╡╨╜╤М╨╡','╨┐╨╛╨╜╨╡╨┤╨╡╨╗╤М╨╜╨╕╨║','╨▓╤В╨╛╤А╨╜╨╕╨║','╤Б╤А╨╡╨┤╨░','╤З╨╡╤В╨▓╨╡╤А╨│','╨┐╤П╤В╨╜╨╕╤Ж╨░','╤Б╤Г╨▒╨▒╨╛╤В╨░'];
-const RU_MONTHS_GEN = ['╤П╨╜╨▓╨░╤А╤П','╤Д╨╡╨▓╤А╨░╨╗╤П','╨╝╨░╤А╤В╨░','╨░╨┐╤А╨╡╨╗╤П','╨╝╨░╤П','╨╕╤О╨╜╤П','╨╕╤О╨╗╤П','╨░╨▓╨│╤Г╤Б╤В╨░','╤Б╨╡╨╜╤В╤П╨▒╤А╤П','╨╛╨║╤В╤П╨▒╤А╤П','╨╜╨╛╤П╨▒╤А╤П','╨┤╨╡╨║╨░╨▒╤А╤П'];
+const RU_MONTHS = ['????????????','??????????????','????????','????????????','??????','????????','????????','????????????','????????????????','??????????????','????????????','??????????????'];
+const RU_DAYS = ['??????????????????????','??????????????????????','??????????????','??????????','??????????????','??????????????','??????????????'];
+const RU_MONTHS_GEN = ['????????????','??????????????','??????????','????????????','??????','????????','????????','??????????????','????????????????','??????????????','????????????','??????????????'];
 
 let USER_ID = '';
 let headers = {};
@@ -228,12 +228,12 @@ async function api(method, path, body) {
 }
 
 window.addEventListener('offline', () => {
-  toastEl.textContent = '╨Э╨╡╤В ╨╕╨╜╤В╨╡╤А╨╜╨╡╤В╨░';
+  toastEl.textContent = '?????? ??????????????????';
   toastEl.className = 'toast show offline';
   $('#syncDot').classList.add('offline');
 });
 window.addEventListener('online', () => {
-  toastEl.textContent = '╨б╨╕╨╜╤Е╤А╨╛╨╜╨╕╨╖╨░╤Ж╨╕╤П...';
+  toastEl.textContent = '??????????????????????????...';
   toastEl.className = 'toast show';
   $('#syncDot').classList.remove('offline');
   loadNotes();
@@ -266,7 +266,7 @@ function cosineSim(a, b) {
 }
 
 function clusterNotes(notes, threshold = 0.12) {
-  if (notes.length <= 1) return notes.length ? { '╨Т╤Б╨╡ ╨╖╨░╨╝╨╡╤В╨║╨╕': notes } : {};
+  if (notes.length <= 1) return notes.length ? { '?????? ??????????????': notes } : {};
   const vectors = tfidfVectors(notes.map(n => n.content));
   const n = notes.length;
   const parent = Array.from({length: n}, (_, i) => i);
@@ -332,7 +332,7 @@ function goToday() { selectedDate = todayStr(); const n = new Date(); calYear = 
 function renderDayTitle() {
   const d = new Date(selectedDate + 'T12:00:00');
   const today = selectedDate === todayStr();
-  $('#dayTitle').textContent = today ? '╨б╨╡╨│╨╛╨┤╨╜╤П' : d.getDate() + ' ' + RU_MONTHS_GEN[d.getMonth()];
+  $('#dayTitle').textContent = today ? '??????????????' : d.getDate() + ' ' + RU_MONTHS_GEN[d.getMonth()];
   $('#daySubtitle').textContent = RU_DAYS[d.getDay()] + (today ? '' : ', ' + d.getFullYear());
   $('#btnToday').classList.toggle('active', today);
 }
@@ -359,16 +359,16 @@ async function saveNote() {
   try {
     await api('POST', '', { content, note_date: selectedDate, user_id: USER_ID });
     input.value = ''; autoResize(); charCount.textContent = '0';
-    toast('╨б╨╛╤Е╤А╨░╨╜╨╡╨╜╨╛');
+    toast('??????????????????');
     $('#syncDot').style.background = '#4caf50';
     countsCache = null;
     await loadNotes();
   } catch (e) {
-    if (!navigator.onLine) { toastEl.textContent = '╨Э╨╡╤В ╨╕╨╜╤В╨╡╤А╨╜╨╡╤В╨░'; toastEl.className = 'toast show offline'; }
-    else toast('╨Ю╤И╨╕╨▒╨║╨░');
+    if (!navigator.onLine) { toastEl.textContent = '?????? ??????????????????'; toastEl.className = 'toast show offline'; }
+    else toast('????????????');
     $('#syncDot').style.background = '#e05555';
   }
-  saveBtn.textContent = '╨б╨Ю╨е╨а╨Р╨Э╨Ш╨в╨м'; saveBtn.disabled = false;
+  saveBtn.textContent = '??????????????????'; saveBtn.disabled = false;
 }
 
 async function deleteNote(id) {
@@ -376,10 +376,10 @@ async function deleteNote(id) {
   if (isNaN(safeId)) return;
   try {
     await api('DELETE', '?id=eq.' + safeId + '&user_id=eq.' + USER_ID);
-    toast('╨г╨┤╨░╨╗╨╡╨╜╨╛');
+    toast('??????????????');
     countsCache = null;
     await loadNotes();
-  } catch (e) { toast('╨Ю╤И╨╕╨▒╨║╨░'); }
+  } catch (e) { toast('????????????'); }
 }
 
 async function loadNotes() {
@@ -425,16 +425,16 @@ function renderGroups() {
   let groups = allGroups, notes = allNotes;
   if (query) {
     notes = allNotes.filter(n => n.content.toLowerCase().includes(query));
-    if (!notes.length) { groupsEl.innerHTML = ''; statsEl.textContent = ''; emptyEl.innerHTML = '<div class="icon">&#9671;</div><p>╨Э╨╕╤З╨╡╨│╨╛ ╨╜╨╡ ╨╜╨░╨╣╨┤╨╡╨╜╨╛</p>'; emptyEl.style.display = 'block'; return; }
+    if (!notes.length) { groupsEl.innerHTML = ''; statsEl.textContent = ''; emptyEl.innerHTML = '<div class="icon">&#9671;</div><p>???????????? ???? ??????????????</p>'; emptyEl.style.display = 'block'; return; }
     const ids = new Set(notes.map(n => n.id));
     groups = {};
     for (const [t, items] of Object.entries(allGroups)) { const f = items.filter(n => ids.has(n.id)); if (f.length) groups[t] = f; }
-    if (!Object.keys(groups).length) groups = { '╨а╨╡╨╖╤Г╨╗╤М╤В╨░╤В╤Л': notes };
+    if (!Object.keys(groups).length) groups = { '????????????????????': notes };
   }
-  if (!notes.length) { groupsEl.innerHTML = ''; statsEl.textContent = ''; emptyEl.innerHTML = '<div class="icon">&#9671;</div><p>' + (selectedDate === todayStr() ? '╨Э╨░╨┐╨╕╤И╨╕ ╨┐╨╡╤А╨▓╤Г╤О ╨╖╨░╨╝╨╡╤В╨║╤Г ╨╖╨░ ╤Б╨╡╨│╨╛╨┤╨╜╤П' : '╨Э╨╡╤В ╨╖╨░╨╝╨╡╤В╨╛╨║ ╨╖╨░ ╤Н╤В╨╛╤В ╨┤╨╡╨╜╤М') + '</p>'; emptyEl.style.display = 'block'; return; }
+  if (!notes.length) { groupsEl.innerHTML = ''; statsEl.textContent = ''; emptyEl.innerHTML = '<div class="icon">&#9671;</div><p>' + (selectedDate === todayStr() ? '???????????? ???????????? ?????????????? ???? ??????????????' : '?????? ?????????????? ???? ???????? ????????') + '</p>'; emptyEl.style.display = 'block'; return; }
   emptyEl.style.display = 'none';
   const gc = Object.keys(groups).length;
-  statsEl.textContent = notes.length + ' ╨╖╨░╨╝╨╡╤В' + (notes.length === 1 ? '╨║╨░' : notes.length < 5 ? '╨║╨╕' : '╨╛╨║') + '  \u00b7  ' + gc + ' ╨│╤А╤Г╨┐╨┐' + (gc === 1 ? '╨░' : '');
+  statsEl.textContent = notes.length + ' ??????????' + (notes.length === 1 ? '????' : notes.length < 5 ? '????' : '????') + '  \u00b7  ' + gc + ' ??????????' + (gc === 1 ? '??' : '');
   let html = '';
   for (const [title, items] of Object.entries(groups)) {
     html += '<div class="group"><div class="group-header"><span class="group-title">' + esc(title) + '</span><span class="group-count">' + items.length + '</span><div class="group-line"></div></div><div class="notes-grid">';
@@ -456,7 +456,7 @@ async function checkSimilar(text) {
     const matches = findSimilar(text, data);
     if (matches.length) {
       const s = matches[0].content.length > 80 ? matches[0].content.slice(0, 80) + '...' : matches[0].content;
-      showSuggest('╨┐╨╛╤Е╨╛╨╢╨╡ ╨╜╨░: ' + esc(s));
+      showSuggest('???????????? ????: ' + esc(s));
     } else hideSuggest();
   } catch (e) {}
 }
@@ -471,7 +471,7 @@ async function loadYesterdaySummary() {
     const data = await api('GET', '?user_id=eq.' + USER_ID + '&note_date=eq.' + ys);
     if (Array.isArray(data) && data.length) {
       const g = clusterNotes(data);
-      showSuggest('╨▓╤З╨╡╤А╨░: ' + data.length + ' ╨╖╨░╨╝╨╡╤В' + (data.length === 1 ? '╨║╨░' : data.length < 5 ? '╨║╨╕' : '╨╛╨║') + ', ' + Object.keys(g).length + ' ╨│╤А╤Г╨┐╨┐');
+      showSuggest('??????????: ' + data.length + ' ??????????' + (data.length === 1 ? '????' : data.length < 5 ? '????' : '????') + ', ' + Object.keys(g).length + ' ??????????');
       setTimeout(hideSuggest, 5000);
     }
   } catch (e) {}
