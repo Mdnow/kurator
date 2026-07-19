@@ -6,7 +6,11 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0a1a">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>КУРАТОР</title>
+<!-- v2.1.0 -->
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -219,9 +223,9 @@ function initLock() {
     overlay.style.display = 'none';
     startApp();
   }
-  btn.addEventListener('click', submit);
+  btn.addEventListener('click', e => { e.preventDefault(); submit(); });
+  btn.addEventListener('touchend', e => { e.preventDefault(); submit(); });
   input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
-  input.addEventListener('touchend', e => { e.preventDefault(); submit(); });
 }
 
 function startApp() {
