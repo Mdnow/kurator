@@ -1,3 +1,15 @@
+const APP_VERSION = '3';
+
+const oldVer = localStorage.getItem('kurator_ver');
+if (oldVer && oldVer !== APP_VERSION) {
+  localStorage.clear();
+  sessionStorage.clear();
+  localStorage.setItem('kurator_ver', APP_VERSION);
+  location.reload();
+} else if (!oldVer) {
+  localStorage.setItem('kurator_ver', APP_VERSION);
+}
+
 const SUPABASE_URL = 'https://pqngmvixfcsrvsvrtbfj.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxbmdtdml4ZmNzcnZzdnJ0YmZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNzY0NDcsImV4cCI6MjA5OTk1MjQ0N30.nbO6rSANWaWRRxnRvrwlrawkBT2DP0VZ1GuyR6C2nHE';
 const API = SUPABASE_URL + '/rest/v1/notes';
