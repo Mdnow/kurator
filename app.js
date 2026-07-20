@@ -1,362 +1,549 @@
-const APP_VERSION = '3';
+// ═══════════════════════════════════════════════════════════════
+//  КУРАТОР v4 — EUNOIA daily journal
+// ═══════════════════════════════════════════════════════════════
 
-const oldVer = localStorage.getItem('kurator_ver');
-if (oldVer && oldVer !== APP_VERSION) {
-  localStorage.clear();
-  sessionStorage.clear();
-  localStorage.setItem('kurator_ver', APP_VERSION);
-  location.reload();
-} else if (!oldVer) {
-  localStorage.setItem('kurator_ver', APP_VERSION);
+;(function() {
+'use strict';
+
+// ─── Version ───────────────────────────────────────────────
+
+const VERSION = '4';
+
+(function migrate() {
+  const v = localStorage.getItem('_kv');
+  if (v && v !== VERSION) {
+    localStorage.clear();
+    sessionStorage.clear();
+    localStorage.setItem('_kv', VERSION);
+    location.reload();
+  } else if (!v) {
+    localStorage.setItem('_kv', VERSION);
+  }
+})();
+
+// ─── Config ─────────────────────────────────────────────────
+
+const CFG = {
+  supabase: {
+    url: 'https://pqngmvixfcsrvsvrtbfj.supabase.co',
+    key: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxbmdtdml4ZmNzcnZzdnJ0YmZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNzY0NDcsImV4cCI6MjA5OTk1MjQ0N30.nbO6rSANWaWRRxnRvrwlrawkBT2DP0VZ1GuyR6C2nHE',
+    api: 'https://pqngmvixfcsrvsvrtbfj.supabase.co/rest/v1/notes'
+  },
+  ai: {
+    model: 'openai/gpt-4o-mini',
+    url: 'https://openrouter.ai/api/v1/chat/completions'
+  }
+};
+
+// ─── State ──────────────────────────────────────────────────
+
+const S = {
+  user: '',
+  headers: {},
+  date: '',
+  calY: 0,
+  calM: 0,
+  counts: {},
+  notes: [],
+  groups: {},
+  loading: true
+};
+
+// ─── Locale ─────────────────────────────────────────────────
+
+const LOC = {
+  months: ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'],
+  monthsGen: ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'],
+  days: ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота']
+};
+
+// ─── DOM ─────────────────────────────────────────────────────
+
+const $ = (s, p) => (p || document).querySelector(s);
+const $$ = (s, p) => (p || document).querySelectorAll(s);
+
+const ID = {};
+['lockOverlay','lockInput','lockBtn','lockErr','appLayout','syncDot','btnToday',
+ 'calMonth','calDays','calCounts','keyInfo','dayTitle','daySubtitle','noteInput',
+ 'charCount','saveBtn','suggest','searchInput','stats','groups','emptyState','toast',
+ 'aiStatus'].forEach(id => ID[id] = document.getElementById(id));
+
+// ─── Utils ───────────────────────────────────────────────────
+
+function today() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 
-const SUPABASE_URL = 'https://pqngmvixfcsrvsvrtbfj.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBxbmdtdml4ZmNzcnZzdnJ0YmZqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQzNzY0NDcsImV4cCI6MjA5OTk1MjQ0N30.nbO6rSANWaWRRxnRvrwlrawkBT2DP0VZ1GuyR6C2nHE';
-const API = SUPABASE_URL + '/rest/v1/notes';
+function esc(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
 
-const $ = s => document.querySelector(s);
-const RU_MONTHS = ['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
-const RU_DAYS = ['воскресенье','понедельник','вторник','среда','четверг','пятница','суббота'];
-const RU_MONTHS_GEN = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+function pad2(n) { return String(n).padStart(2,'0'); }
 
-let USER_ID = '';
-let headers = {};
-let selectedDate = todayStr();
-let calYear, calMonth;
-let dateCounts = {};
-let allNotes = [];
-let allGroups = {};
-let suggestTimer = null;
-let countsCache = null;
-let countsCacheMonth = '';
-let isLoading = true;
+function plural(n, forms) {
+  return forms[
+    n % 10 === 1 && n % 100 !== 11 ? 0 :
+    n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 10 || n % 100 >= 20) ? 1 : 2
+  ];
+}
 
-function todayStr() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
-function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+// ─── Auth ────────────────────────────────────────────────────
 
 function setKey(key) {
-  USER_ID = key;
-  headers = { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Prefer': 'return=representation', 'x-user-id': USER_ID };
-  localStorage.setItem('kurator_key', USER_ID);
+  S.user = key;
+  S.headers = {
+    'Content-Type': 'application/json',
+    apikey: CFG.supabase.key,
+    Authorization: 'Bearer ' + CFG.supabase.key,
+    Prefer: 'return=representation',
+    'x-user-id': S.user
+  };
+  localStorage.setItem('_key', S.user);
 }
 
 function lockApp() {
-  localStorage.removeItem('kurator_key');
+  localStorage.removeItem('_key');
   location.reload();
 }
 
 function initLock() {
-  const saved = localStorage.getItem('kurator_key');
+  const saved = localStorage.getItem('_key');
   if (saved) { setKey(saved); startApp(); return; }
-  const overlay = $('#lockOverlay');
-  const input = $('#lockInput');
-  const btn = $('#lockBtn');
-  const err = $('#lockErr');
-  overlay.style.display = 'flex';
-  input.focus();
+  ID.lockOverlay.classList.add('active');
+  ID.lockInput.focus();
   function submit() {
-    const v = input.value.trim();
-    if (!v) { err.style.display = 'block'; return; }
+    const v = ID.lockInput.value.trim();
+    if (!v) { ID.lockErr.classList.add('show'); return; }
+    ID.lockErr.classList.remove('show');
     setKey(v.toLowerCase());
-    overlay.style.display = 'none';
+    ID.lockOverlay.classList.remove('active');
     startApp();
   }
-  btn.addEventListener('click', submit);
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
+  ID.lockBtn.addEventListener('click', submit);
+  ID.lockInput.addEventListener('keydown', e => { if (e.key === 'Enter') submit(); });
 }
 
-function startApp() {
-  $('#appLayout').style.display = 'flex';
-  $('#keyInfo').textContent = USER_ID;
-  showSkeleton();
-  claimPublicNotes().then(() => { initCalendar(); renderDayTitle(); loadNotes(); loadYesterdaySummary(); });
-}
+// ─── API (Supabase) ──────────────────────────────────────────
 
 async function api(method, path, body) {
-  const opts = { method, headers };
+  const opts = { method, headers: S.headers };
   if (body) opts.body = JSON.stringify(body);
-  const r = await fetch(API + path, opts);
-  if (!r.ok) throw new Error(r.status);
+  const r = await fetch(CFG.supabase.api + path, opts);
+  if (!r.ok) throw new Error(`API ${r.status}`);
   const text = await r.text();
   return text ? JSON.parse(text) : null;
 }
 
-window.addEventListener('offline', () => {
-  toastEl.textContent = 'Нет интернета';
-  toastEl.className = 'toast show offline';
-  $('#syncDot').classList.add('offline');
-});
-window.addEventListener('online', () => {
-  toastEl.textContent = 'Синхронизация...';
-  toastEl.className = 'toast show';
-  $('#syncDot').classList.remove('offline');
-  loadNotes();
-  setTimeout(() => { toastEl.className = 'toast'; }, 2000);
-});
+function syncDot(state) {
+  ID.syncDot.className = 'sync-dot ' + state;
+}
 
-function tokenize(text) { return text.toLowerCase().replace(/[^\w\s]/g, ' ').split(/\s+/).filter(t => t.length > 1); }
+// ─── AI (OpenRouter) ─────────────────────────────────────────
 
-function tfidfVectors(corpus) {
-  const tokenized = corpus.map(tokenize);
-  const n = corpus.length;
-  const df = {};
-  tokenized.forEach(tokens => [...new Set(tokens)].forEach(t => { df[t] = (df[t] || 0) + 1; }));
-  return tokenized.map(tokens => {
+function aiKey() {
+  return localStorage.getItem('_ai_key');
+}
+
+function setAiKey(key) {
+  localStorage.setItem('_ai_key', key);
+}
+
+async function ai(prompt) {
+  const key = aiKey();
+  if (!key) return null;
+  try {
+    const r = await fetch(CFG.ai.url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + key,
+        'HTTP-Referer': 'https://mdnow.github.io/kurator/'
+      },
+      body: JSON.stringify({
+        model: CFG.ai.model,
+        messages: [
+          { role: 'system', content: 'Ты — ассистент для дневника. Отвечай кратко, 1-2 предложения. На русском.' },
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: 100,
+        temperature: 0.7
+      })
+    });
+    if (!r.ok) { localStorage.removeItem('_ai_key'); return null; }
+    const data = await r.json();
+    return data.choices?.[0]?.message?.content || null;
+  } catch {
+    return null;
+  }
+}
+
+async function aiSuggest(text) {
+  hideSuggest();
+  const reply = await ai(
+    `Вот запись из дневника. Предложи связанную мысль, вопрос или инсайт:\n\n${text}`
+  );
+  if (reply) showSuggest('💡 ' + reply);
+}
+
+// ─── Clustering (TF-IDF) ─────────────────────────────────────
+
+function tokenize(text) {
+  return text.toLowerCase().replace(/[^\w\s]/g,' ').split(/\s+/).filter(t => t.length > 1);
+}
+
+function tfidf(corpus) {
+  const tok = corpus.map(tokenize);
+  const n = corpus.length, df = {};
+  tok.forEach(t => [...new Set(t)].forEach(w => df[w] = (df[w]||0)+1));
+  return tok.map(t => {
     const tf = {};
-    tokens.forEach(t => { tf[t] = (tf[t] || 0) + 1; });
-    const vec = {};
-    for (const [w, c] of Object.entries(tf)) vec[w] = c * (Math.log((n + 1) / (df[w] + 1)) + 1);
-    return vec;
+    t.forEach(w => tf[w] = (tf[w]||0)+1);
+    const v = {};
+    for (const [w,c] of Object.entries(tf)) v[w] = c * (Math.log((n+1)/(df[w]+1)) + 1);
+    return v;
   });
 }
 
-function cosineSim(a, b) {
-  const keys = Object.keys(a).filter(k => k in b);
-  if (!keys.length) return 0;
-  const dot = keys.reduce((s, k) => s + a[k] * b[k], 0);
-  const na = Math.sqrt(Object.values(a).reduce((s, v) => s + v*v, 0));
-  const nb = Math.sqrt(Object.values(b).reduce((s, v) => s + v*v, 0));
-  return na && nb ? dot / (na * nb) : 0;
+function cos(a, b) {
+  const ks = Object.keys(a).filter(k => k in b);
+  if (!ks.length) return 0;
+  const dot = ks.reduce((s,k) => s + a[k]*b[k], 0);
+  const na = Math.sqrt(Object.values(a).reduce((s,v) => s+v*v, 0));
+  const nb = Math.sqrt(Object.values(b).reduce((s,v) => s+v*v, 0));
+  return na && nb ? dot / (na*nb) : 0;
 }
 
-function clusterNotes(notes, threshold = 0.12) {
+function cluster(notes, thresh = 0.12) {
   if (notes.length <= 1) return notes.length ? { 'Все заметки': notes } : {};
-  const vectors = tfidfVectors(notes.map(n => n.content));
-  const n = notes.length;
-  const parent = Array.from({length: n}, (_, i) => i);
-  function find(x) { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; }
-  function union(a, b) { parent[find(a)] = find(b); }
-  for (let i = 0; i < n; i++) for (let j = i+1; j < n; j++) if (cosineSim(vectors[i], vectors[j]) >= threshold) union(i, j);
-  const groups = {};
-  notes.forEach((note, i) => { const r = find(i); (groups[r] = groups[r] || []).push(note); });
+  const vecs = tfidf(notes.map(n => n.content));
+  const n = notes.length, p = Array.from({length:n}, (_,i)=>i);
+  function find(x) { while (p[x] !== x) { p[x] = p[p[x]]; x = p[x]; } return x; }
+  function union(a,b) { p[find(a)] = find(b); }
+  for (let i = 0; i < n; i++)
+    for (let j = i+1; j < n; j++)
+      if (cos(vecs[i], vecs[j]) >= thresh) union(i,j);
+  const raw = {};
+  notes.forEach((nt,i) => { const r = find(i); (raw[r] = raw[r] || []).push(nt); });
   const named = {};
-  for (const [, items] of Object.entries(groups)) {
+  for (const items of Object.values(raw)) {
     let title;
-    if (items.length === 1) { const w = items[0].content.slice(0, 40).split(' ').slice(0, 4).join(' '); title = w + (items[0].content.length > 40 ? '...' : ''); }
-    else { const centroid = {}; items.forEach(n => tokenize(n.content).forEach(t => { centroid[t] = (centroid[t] || 0) + 1; })); const top = Object.entries(centroid).sort((a,b) => b[1]-a[1]).slice(0, 3).map(e => e[0]); title = top.slice(0, 2).join(' / ').replace(/^\w/, c => c.toUpperCase()); }
+    if (items.length === 1) {
+      const w = items[0].content.slice(0,40).split(' ').slice(0,4).join(' ');
+      title = w + (items[0].content.length > 40 ? '...' : '');
+    } else {
+      const cent = {};
+      items.forEach(n => tokenize(n.content).forEach(t => cent[t] = (cent[t]||0)+1));
+      title = Object.entries(cent).sort((a,b) => b[1]-a[1]).slice(0,2).map(e => e[0]).join(' / ').replace(/^\w/, c=>c.toUpperCase());
+    }
     named[title] = items;
   }
-  return Object.fromEntries(Object.entries(named).sort((a, b) => b[1].length - a[1].length));
+  return Object.fromEntries(Object.entries(named).sort((a,b) => b[1].length - a[1].length));
 }
 
-function findSimilar(query, notes, topK = 2) {
-  if (!notes.length) return [];
-  const vectors = tfidfVectors([query, ...notes.map(n => n.content)]);
-  const q = vectors[0];
-  return notes.map((n, i) => ({ id: n.id, content: n.content, score: cosineSim(q, vectors[i+1]) }))
-    .filter(r => r.score > 0.05).sort((a, b) => b.score - a.score).slice(0, topK);
+// ─── Calendar ────────────────────────────────────────────────
+
+function initCal() {
+  const n = new Date();
+  S.calY = n.getFullYear();
+  S.calM = n.getMonth();
+  S.date = today();
+  renderCal();
 }
 
-function initCalendar() { const now = new Date(); calYear = now.getFullYear(); calMonth = now.getMonth(); renderCalendar(); }
-
-function renderCalendar() {
-  $('#calMonth').textContent = RU_MONTHS[calMonth] + ' ' + calYear;
-  const first = new Date(calYear, calMonth, 1);
-  const last = new Date(calYear, calMonth + 1, 0);
-  let startDay = first.getDay() - 1; if (startDay < 0) startDay = 6;
-  let html = '';
-  for (let i = 0; i < startDay; i++) { const d = new Date(calYear, calMonth, -startDay+i+1); html += '<div class="cal-day other">' + d.getDate() + '</div>'; }
-  for (let d = 1; d <= last.getDate(); d++) {
-    const ds = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-    const cls = ['cal-day'];
-    if (ds === todayStr()) cls.push('today');
-    if (ds === selectedDate) cls.push('selected');
-    if (dateCounts[ds] > 0) cls.push('has-notes');
-    html += '<div class="' + cls.join(' ') + '" data-date="' + ds + '">' + d + '</div>';
+function renderCal() {
+  ID.calMonth.textContent = LOC.months[S.calM] + ' ' + S.calY;
+  const first = new Date(S.calY, S.calM, 1);
+  const last = new Date(S.calY, S.calM+1, 0);
+  let start = first.getDay() - 1;
+  if (start < 0) start = 6;
+  let h = '';
+  for (let i = 0; i < start; i++) {
+    const d = new Date(S.calY, S.calM, -start+i+1);
+    h += `<div class="cal-day other">${d.getDate()}</div>`;
   }
-  const rem = 7 - ((startDay + last.getDate()) % 7);
-  if (rem < 7) for (let i = 1; i <= rem; i++) html += '<div class="cal-day other">' + i + '</div>';
-  $('#calDays').innerHTML = html;
-  renderCalCounts();
+  for (let d = 1; d <= last.getDate(); d++) {
+    const ds = `${S.calY}-${pad2(S.calM+1)}-${pad2(d)}`;
+    const cls = ['cal-day'];
+    if (ds === today()) cls.push('today');
+    if (ds === S.date) cls.push('selected');
+    if (S.counts[ds] > 0) cls.push('has-notes');
+    h += `<div class="${cls.join(' ')}" data-date="${ds}">${d}</div>`;
+  }
+  const rem = 7 - (start + last.getDate()) % 7;
+  if (rem < 7) for (let i = 1; i <= rem; i++) h += `<div class="cal-day other">${i}</div>`;
+  ID.calDays.innerHTML = h;
+  renderCounts();
 }
 
-function renderCalCounts() {
-  const counts = Object.entries(dateCounts).sort((a,b) => b[0].localeCompare(a[0])).slice(0, 5);
-  if (!counts.length) { $('#calCounts').innerHTML = ''; return; }
-  $('#calCounts').innerHTML = counts.map(([date, cnt]) => {
-    const d = new Date(date + 'T12:00:00');
-    return '<div class="cal-stat"><span>' + d.getDate() + ' ' + RU_MONTHS_GEN[d.getMonth()] + '</span><span>' + cnt + '</span></div>';
-  }).join('');
+function renderCounts() {
+  const items = Object.entries(S.counts).sort((a,b) => b[0].localeCompare(a[0])).slice(0,5);
+  ID.calCounts.innerHTML = items.length
+    ? items.map(([d,c]) => {
+        const dt = new Date(d + 'T12:00:00');
+        return `<div class="cal-stat"><span>${dt.getDate()} ${LOC.monthsGen[dt.getMonth()]}</span><span>${c}</span></div>`;
+      }).join('')
+    : '';
 }
 
-function calNav(dir) { calMonth += dir; if (calMonth > 11) { calMonth = 0; calYear++; } if (calMonth < 0) { calMonth = 11; calYear--; } countsCache = null; renderCalendar(); loadDateCounts(); }
-function selectDate(ds) { selectedDate = ds; renderCalendar(); renderDayTitle(); loadNotes(); }
-function goToday() { selectedDate = todayStr(); const n = new Date(); calYear = n.getFullYear(); calMonth = n.getMonth(); countsCache = null; renderCalendar(); renderDayTitle(); loadNotes(); }
-
-function renderDayTitle() {
-  const d = new Date(selectedDate + 'T12:00:00');
-  const today = selectedDate === todayStr();
-  $('#dayTitle').textContent = today ? 'Сегодня' : d.getDate() + ' ' + RU_MONTHS_GEN[d.getMonth()];
-  $('#daySubtitle').textContent = RU_DAYS[d.getDay()] + (today ? '' : ', ' + d.getFullYear());
-  $('#btnToday').classList.toggle('active', today);
+function calNav(dir) {
+  S.calM += dir;
+  if (S.calM > 11) { S.calM = 0; S.calY++; }
+  if (S.calM < 0) { S.calM = 11; S.calY--; }
+  renderCal();
+  loadCounts();
 }
 
-const input = $('#noteInput'), saveBtn = $('#saveBtn'), charCount = $('#charCount'), searchInput = $('#searchInput'), groupsEl = $('#groups'), statsEl = $('#stats'), emptyEl = $('#emptyState'), toastEl = $('#toast');
+function goToday() {
+  S.date = today();
+  const n = new Date();
+  S.calY = n.getFullYear();
+  S.calM = n.getMonth();
+  renderCal();
+  renderTitle();
+  loadNotes();
+}
 
-function autoResize() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 200) + 'px'; }
+function selectDate(ds) {
+  S.date = ds;
+  renderCal();
+  renderTitle();
+  loadNotes();
+}
 
-input.addEventListener('input', () => {
-  autoResize(); charCount.textContent = input.value.length;
-  clearTimeout(suggestTimer);
-  const val = input.value.trim();
-  if (val.length >= 6) suggestTimer = setTimeout(() => checkSimilar(val), 400);
-  else hideSuggest();
-});
-input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveNote(); } });
-saveBtn.addEventListener('click', saveNote);
-searchInput.addEventListener('input', renderGroups);
+// ─── Notes ───────────────────────────────────────────────────
 
 async function saveNote() {
-  const content = input.value.trim();
+  const content = ID.noteInput.value.trim();
   if (!content) return;
-  saveBtn.textContent = '...'; saveBtn.disabled = true;
+  ID.saveBtn.textContent = '...';
+  ID.saveBtn.disabled = true;
   try {
-    await api('POST', '', { content, note_date: selectedDate, user_id: USER_ID });
-    input.value = ''; autoResize(); charCount.textContent = '0';
+    await api('POST', '', { content, note_date: S.date, user_id: S.user });
+    ID.noteInput.value = '';
+    autoResize();
+    ID.charCount.textContent = '0';
     toast('Сохранено');
-    $('#syncDot').style.background = '#4caf50';
-    countsCache = null;
+    syncDot('on');
     await loadNotes();
-  } catch (e) {
-    if (!navigator.onLine) { toastEl.textContent = 'Нет интернета'; toastEl.className = 'toast show offline'; }
-    else toast('Ошибка');
-    $('#syncDot').style.background = '#e05555';
+    aiSuggest(content);
+  } catch {
+    if (!navigator.onLine) toast('Нет интернета');
+    else toast('Ошибка сохранения');
+    syncDot('off');
   }
-  saveBtn.textContent = 'СОХРАНИТЬ'; saveBtn.disabled = false;
+  ID.saveBtn.textContent = 'СОХРАНИТЬ';
+  ID.saveBtn.disabled = false;
 }
 
 async function deleteNote(id) {
-  const safeId = parseInt(id, 10);
-  if (isNaN(safeId)) return;
+  const sid = parseInt(id, 10);
+  if (isNaN(sid)) return;
   try {
-    await api('DELETE', '?id=eq.' + safeId + '&user_id=eq.' + USER_ID);
+    await api('DELETE', `?id=eq.${sid}&user_id=eq.${S.user}`);
     toast('Удалено');
-    countsCache = null;
     await loadNotes();
-  } catch (e) { toast('Ошибка'); }
+  } catch { toast('Ошибка'); }
 }
 
 async function loadNotes() {
-  if (isLoading) showSkeleton();
+  if (S.loading) showSkeleton();
   try {
-    const data = await api('GET', '?user_id=eq.' + USER_ID + '&note_date=eq.' + selectedDate + '&order=created_at.desc');
-    allNotes = Array.isArray(data) ? data : [];
-    allGroups = clusterNotes(allNotes);
-    await loadDateCounts();
-    renderCalendar();
+    const data = await api('GET', `?user_id=eq.${S.user}&note_date=eq.${S.date}&order=created_at.desc`);
+    S.notes = Array.isArray(data) ? data : [];
+    S.groups = cluster(S.notes);
+    await loadCounts();
+    renderCal();
     renderGroups();
-    try { sessionStorage.setItem('notes_' + USER_ID + '_' + selectedDate, JSON.stringify(allNotes)); } catch(e) {}
-  } catch (e) {
+    try { sessionStorage.setItem(`n_${S.user}_${S.date}`, JSON.stringify(S.notes)); } catch {}
+  } catch {
     if (!navigator.onLine) {
-      const cached = sessionStorage.getItem('notes_' + USER_ID + '_' + selectedDate);
-      if (cached) { try { allNotes = JSON.parse(cached); allGroups = clusterNotes(allNotes); renderGroups(); } catch(e) {} }
+      const cached = sessionStorage.getItem(`n_${S.user}_${S.date}`);
+      if (cached) {
+        try { S.notes = JSON.parse(cached); S.groups = cluster(S.notes); renderGroups(); } catch {}
+      }
     }
   }
-  isLoading = false;
+  S.loading = false;
 }
 
-async function loadDateCounts() {
-  const cacheKey = USER_ID + '_' + calYear + '_' + calMonth;
-  if (countsCache && countsCacheMonth === cacheKey) return;
+async function loadCounts() {
+  const key = `${S.user}_${S.calY}_${S.calM}`;
   try {
-    const data = await api('GET', '?user_id=eq.' + USER_ID + '&select=note_date&order=note_date.desc');
+    const data = await api('GET', `?user_id=eq.${S.user}&select=note_date&order=note_date.desc`);
     if (!Array.isArray(data)) return;
-    dateCounts = {};
-    data.forEach(n => { dateCounts[n.note_date] = (dateCounts[n.note_date] || 0) + 1; });
-    countsCache = dateCounts;
-    countsCacheMonth = cacheKey;
-    try { sessionStorage.setItem('counts_' + cacheKey, JSON.stringify(dateCounts)); } catch(e) {}
-  } catch (e) {}
+    S.counts = {};
+    data.forEach(n => S.counts[n.note_date] = (S.counts[n.note_date]||0)+1);
+    try { sessionStorage.setItem(`c_${key}`, JSON.stringify(S.counts)); } catch {}
+  } catch {}
 }
 
-function showSkeleton() {
-  groupsEl.innerHTML = '<div class="skeleton"><div class="skel-card"><div class="skel-line w80"></div><div class="skel-line w60" style="margin-top:8px"></div><div class="skel-line w40" style="margin-top:8px"></div></div><div class="skel-card"><div class="skel-line w60"></div><div class="skel-line w80" style="margin-top:8px"></div></div><div class="skel-card"><div class="skel-line w40"></div><div class="skel-line w60" style="margin-top:8px"></div></div></div>';
-}
-
-function renderGroups() {
-  const query = searchInput.value.trim().toLowerCase();
-  let groups = allGroups, notes = allNotes;
-  if (query) {
-    notes = allNotes.filter(n => n.content.toLowerCase().includes(query));
-    if (!notes.length) { groupsEl.innerHTML = ''; statsEl.textContent = ''; emptyEl.innerHTML = '<div class="icon">&#9671;</div><p>Ничего не найдено</p>'; emptyEl.style.display = 'block'; return; }
-    const ids = new Set(notes.map(n => n.id));
-    groups = {};
-    for (const [t, items] of Object.entries(allGroups)) { const f = items.filter(n => ids.has(n.id)); if (f.length) groups[t] = f; }
-    if (!Object.keys(groups).length) groups = { 'Результаты': notes };
-  }
-  if (!notes.length) { groupsEl.innerHTML = ''; statsEl.textContent = ''; emptyEl.innerHTML = '<div class="icon">&#9671;</div><p>' + (selectedDate === todayStr() ? 'Напиши первую заметку за сегодня' : 'Нет заметок за этот день') + '</p>'; emptyEl.style.display = 'block'; return; }
-  emptyEl.style.display = 'none';
-  const gc = Object.keys(groups).length;
-  statsEl.textContent = notes.length + ' замет' + (notes.length === 1 ? 'ка' : notes.length < 5 ? 'ки' : 'ок') + '  \u00b7  ' + gc + ' групп' + (gc === 1 ? 'а' : '');
-  let html = '';
-  for (const [title, items] of Object.entries(groups)) {
-    html += '<div class="group"><div class="group-header"><span class="group-title">' + esc(title) + '</span><span class="group-count">' + items.length + '</span><div class="group-line"></div></div><div class="notes-grid">';
-    for (const note of items) {
-      const t = new Date(note.created_at);
-      const time = String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
-      const safeId = parseInt(note.id, 10);
-      html += '<div class="note-card"><div class="note-content">' + esc(note.content) + '</div><div class="note-meta"><span class="note-date">' + time + '</span><button class="note-delete" data-id="' + safeId + '">&#10005;</button></div></div>';
-    }
-    html += '</div></div>';
-  }
-  groupsEl.innerHTML = html;
-}
-
-async function checkSimilar(text) {
-  try {
-    const data = await api('GET', '?user_id=eq.' + USER_ID + '&select=content&order=created_at.desc&limit=100');
-    if (!Array.isArray(data)) return;
-    const matches = findSimilar(text, data);
-    if (matches.length) {
-      const s = matches[0].content.length > 80 ? matches[0].content.slice(0, 80) + '...' : matches[0].content;
-      showSuggest('похоже на: ' + esc(s));
-    } else hideSuggest();
-  } catch (e) {}
-}
-
-function hideSuggest() { const el = $('#suggest'); if (el) el.style.display = 'none'; }
-function showSuggest(text) { const el = $('#suggest'); if (el) { el.textContent = text; el.style.display = 'block'; } }
-
-async function loadYesterdaySummary() {
-  const y = new Date(); y.setDate(y.getDate() - 1);
-  const ys = y.getFullYear() + '-' + String(y.getMonth()+1).padStart(2,'0') + '-' + String(y.getDate()).padStart(2,'0');
-  try {
-    const data = await api('GET', '?user_id=eq.' + USER_ID + '&note_date=eq.' + ys);
-    if (Array.isArray(data) && data.length) {
-      const g = clusterNotes(data);
-      showSuggest('вчера: ' + data.length + ' замет' + (data.length === 1 ? 'ка' : data.length < 5 ? 'ки' : 'ок') + ', ' + Object.keys(g).length + ' групп');
-      setTimeout(hideSuggest, 5000);
-    }
-  } catch (e) {}
-}
-
-function toast(msg) { toastEl.textContent = msg; toastEl.className = 'toast show'; setTimeout(() => { toastEl.className = 'toast'; }, 2000); }
-
-async function claimPublicNotes() {
+async function claimPublic() {
   try {
     const check = await api('GET', '?user_id=eq.public&select=id&limit=1');
     if (!Array.isArray(check) || !check.length) return;
-    const data = await api('GET', '?user_id=eq.public&select=id');
-    if (Array.isArray(data)) {
-      for (const note of data) {
-        const safeId = parseInt(note.id, 10);
-        if (!isNaN(safeId)) await api('PATCH', '?id=eq.' + safeId, { user_id: USER_ID });
+    const all = await api('GET', '?user_id=eq.public&select=id');
+    if (Array.isArray(all)) {
+      for (const n of all) {
+        const sid = parseInt(n.id,10);
+        if (!isNaN(sid)) await api('PATCH', `?id=eq.${sid}`, { user_id: S.user });
       }
     }
-  } catch (e) {}
+  } catch {}
 }
 
-document.addEventListener('click', e => {
-  const day = e.target.closest('[data-date]');
-  if (day) { selectDate(day.dataset.date); return; }
-  const del = e.target.closest('[data-id]');
-  if (del && del.classList.contains('note-delete')) { deleteNote(del.dataset.id); return; }
-});
+async function yesterdaySummary() {
+  const y = new Date();
+  y.setDate(y.getDate()-1);
+  const ys = `${y.getFullYear()}-${pad2(y.getMonth()+1)}-${pad2(y.getDate())}`;
+  try {
+    const data = await api('GET', `?user_id=eq.${S.user}&note_date=eq.${ys}`);
+    if (Array.isArray(data) && data.length) {
+      const g = cluster(data);
+      showSuggest(`вчера: ${data.length} ${plural(data.length, ['заметка','заметки','заметок'])}, ${Object.keys(g).length} ${plural(Object.keys(g).length, ['группа','группы','групп'])}`);
+      setTimeout(hideSuggest, 5000);
+    }
+  } catch {}
+}
 
-$('#btnToday').addEventListener('click', goToday);
-$('#keyInfo').addEventListener('click', lockApp);
-document.querySelectorAll('.cal-nav').forEach(el => {
-  el.addEventListener('click', () => calNav(parseInt(el.dataset.dir, 10)));
-});
+// ─── UI ──────────────────────────────────────────────────────
+
+function renderTitle() {
+  const d = new Date(S.date + 'T12:00:00');
+  const isToday = S.date === today();
+  ID.dayTitle.textContent = isToday ? 'Сегодня' : `${d.getDate()} ${LOC.monthsGen[d.getMonth()]}`;
+  ID.daySubtitle.textContent = LOC.days[d.getDay()] + (isToday ? '' : `, ${d.getFullYear()}`);
+  ID.btnToday.classList.toggle('active', isToday);
+}
+
+function autoResize() {
+  ID.noteInput.style.height = 'auto';
+  ID.noteInput.style.height = Math.min(ID.noteInput.scrollHeight, 200) + 'px';
+}
+
+function showSkeleton() {
+  ID.groups.innerHTML =
+    '<div class="skeleton"><div class="skel-card"><div class="skel-line w80"></div><div class="skel-line w60" style="margin-top:8px"></div><div class="skel-line w40" style="margin-top:8px"></div></div><div class="skel-card"><div class="skel-line w60"></div><div class="skel-line w80" style="margin-top:8px"></div></div><div class="skel-card"><div class="skel-line w40"></div><div class="skel-line w60" style="margin-top:8px"></div></div></div>';
+}
+
+function renderGroups() {
+  const q = ID.searchInput.value.trim().toLowerCase();
+  let groups = S.groups, notes = S.notes;
+  if (q) {
+    notes = S.notes.filter(n => n.content.toLowerCase().includes(q));
+    if (!notes.length) {
+      ID.groups.innerHTML = '';
+      ID.stats.textContent = '';
+      ID.emptyState.innerHTML = '<div class="icon">&#9671;</div><p>Ничего не найдено</p>';
+      ID.emptyState.classList.add('show');
+      return;
+    }
+    const ids = new Set(notes.map(n => n.id));
+    groups = {};
+    for (const [t,items] of Object.entries(S.groups)) {
+      const f = items.filter(n => ids.has(n.id));
+      if (f.length) groups[t] = f;
+    }
+    if (!Object.keys(groups).length) groups = { 'Результаты': notes };
+  }
+  if (!notes.length) {
+    ID.groups.innerHTML = '';
+    ID.stats.textContent = '';
+    ID.emptyState.innerHTML = `<div class="icon">&#9671;</div><p>${S.date === today() ? 'Напиши первую заметку за сегодня' : 'Нет заметок за этот день'}</p>`;
+    ID.emptyState.classList.add('show');
+    return;
+  }
+  ID.emptyState.classList.remove('show');
+  const gc = Object.keys(groups).length;
+  ID.stats.textContent = `${notes.length} ${plural(notes.length,['заметка','заметки','заметок'])} · ${gc} ${plural(gc,['группа','группы','групп'])}`;
+  let h = '';
+  for (const [title, items] of Object.entries(groups)) {
+    h += `<div class="group"><div class="group-header"><span class="group-title">${esc(title)}</span><span class="group-count">${items.length}</span><div class="group-line"></div></div><div class="notes-grid">`;
+    for (const note of items) {
+      const t = new Date(note.created_at);
+      const time = `${pad2(t.getHours())}:${pad2(t.getMinutes())}`;
+      const sid = parseInt(note.id,10);
+      h += `<div class="note-card"><div class="note-content">${esc(note.content)}</div><div class="note-meta"><span class="note-date">${time}</span><button class="note-delete" data-id="${sid}">&#10005;</button></div></div>`;
+    }
+    h += '</div></div>';
+  }
+  ID.groups.innerHTML = h;
+}
+
+function showSuggest(text) {
+  ID.suggest.textContent = text;
+  ID.suggest.classList.add('show');
+}
+function updateAiStatus() {
+  ID.aiStatus.textContent = aiKey() ? '✦ AI' : '◇ AI';
+  ID.aiStatus.title = aiKey() ? 'AI подключён (нажми чтобы сменить ключ)' : 'Нажми чтобы добавить AI ключ';
+}
+
+function hideSuggest() {
+  ID.suggest.classList.remove('show');
+}
+
+function toast(msg, err) {
+  ID.toast.textContent = msg;
+  ID.toast.className = 'toast show' + (err ? ' error' : '');
+  setTimeout(() => { ID.toast.className = 'toast'; }, 2500);
+}
+
+// ─── Events ──────────────────────────────────────────────────
+
+function setupEvents() {
+  ID.noteInput.addEventListener('input', () => {
+    autoResize();
+    ID.charCount.textContent = ID.noteInput.value.length;
+  });
+  ID.noteInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveNote(); }
+  });
+  ID.saveBtn.addEventListener('click', saveNote);
+  ID.searchInput.addEventListener('input', renderGroups);
+  ID.btnToday.addEventListener('click', goToday);
+  ID.keyInfo.addEventListener('click', lockApp);
+  ID.aiStatus.addEventListener('click', () => {
+    const k = prompt(aiKey() ? 'Сменить AI ключ (оставь пустым чтобы удалить):' : 'Введи OpenRouter API ключ:');
+    if (k) { setAiKey(k.trim()); updateAiStatus(); toast('AI ключ сохранён'); }
+    else if (k === '') { localStorage.removeItem('_ai_key'); updateAiStatus(); toast('AI ключ удалён'); }
+  });
+  $$('.cal-nav').forEach(el => el.addEventListener('click', () => calNav(parseInt(el.dataset.dir,10))));
+  document.addEventListener('click', e => {
+    const day = e.target.closest('[data-date]');
+    if (day) { selectDate(day.dataset.date); return; }
+    const del = e.target.closest('[data-id]');
+    if (del && del.classList.contains('note-delete')) deleteNote(del.dataset.id);
+  });
+  window.addEventListener('offline', () => {
+    toast('Нет интернета', true);
+    syncDot('off');
+  });
+  window.addEventListener('online', () => {
+    toast('Синхронизация...');
+    syncDot('on');
+    loadNotes();
+  });
+}
+
+// ─── Init ────────────────────────────────────────────────────
+
+function startApp() {
+  ID.appLayout.style.display = 'flex';
+  ID.keyInfo.textContent = S.user;
+  updateAiStatus();
+  showSkeleton();
+  claimPublic().then(() => {
+    initCal();
+    renderTitle();
+    loadNotes();
+    yesterdaySummary();
+  });
+}
 
 initLock();
+setupEvents();
+
+})();
